@@ -1,1 +1,4 @@
-# Julia A fractal generator
+# Julia
+
+A fractal generator
+
