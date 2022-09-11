@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<!-- Mandelbrot set drawing program -->
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+</head>
+
+<style>
+
+body {
+    background-color: #333333;
+    touch-action: none;
+}
+
+h1 {
+    color: LightGreen;
+    font-family: "Comic Sans MS", sans-serif;
+    font-size: 32px;
+}
+
+/* Set up the colour-display area. */
+#myBox {
+    width: 800px;
+    height: 1400px;
+    padding: 0;
+    margin: auto;
+    display: block;
+    border:5px solid #000000;
+}
+</style>
+
+<body>
+<h1 align=center>The Mandelbrot Set</h1>
+<canvas id="myBox" width=800px height=1400px></canvas>
+<script>
+// Declare "use strict" to enable better error reporting.
+"use strict";
+
+// Global vars to cache event state
+var evCache = new Array();
+var prevDiff = -1;
+var xPrev =  0;
+var yPrev = 0; 
+
+(function () {
+    function pointermove_handler(ev) {
+        for (var i = 0; i < evCache.length; i++) {
+            if (ev.pointerId == evCache[i].pointerId) {
+                evCache[i] = ev;
+                break;
+            }
+        }
+
+        // If one pointer is down, check diffs
+        if (evCache.length == 1) {
+            var xCur = evCache[0].clientX;
+            var yCur = evCache[0].clientY;
+            if (xPrev) {
+                var dx = Math.abs(xPrev - xCur);
+                if (xCur > xPrev) {
+                    // Move left
+                    xPan -= dx;
+                    setTimeout(reDraw, 0);
+                }
+                if (xCur < xPrev) {
+                    // Move right
+                    xPan += dx;
+                    setTimeout(reDraw, 0);
+                }
+            }
+            if (yPrev) {
+                var dy = Math.abs(yPrev-yCur);
+                if (yCur > yPrev) {
+                    // Move left
+                    yPan -= dy;
+                    setTimeout(reDraw, 0);
+                }
+                if (yCur < yPrev) {
+                    // Move right
+                    yPan += dy;
+                    setTimeout(reDraw, 0);
+                }
+            }
+            xPrev = xCur;
+            yPrev = yCur;
+        }
+
+        // If two pointers are down, check for pinch gestures
+        if (evCache.length == 2) {
+            // Calculate the distance between the two pointers
+            var curDiff = Math.abs(evCache[0].clientX - evCache[1].clientX);
+
+            if (prevDiff > 0) {
+                if (curDiff > prevDiff) {
+                    // The distance between the two pointers has increased
+                    zoom *= 1.3;
+                    xPan *= 1.3;
+                    yPan *= 1.3;
+                    if (maxIt < 250) {
+                        maxIt += 2;
+                    }
+                    setTimeout(reDraw, 0);
+                }
+                if (curDiff < prevDiff) {
+                    // The distance between the two pointers has decreased
+                    zoom /= 1.3;
+                    xPan /= 1.3;
+                    yPan /= 1.3;
+                    maxIt -= 2;
+                    setTimeout(reDraw, 0);
+                }
+            }
+
+            // Cache the distance for the next move event 
+            prevDiff = curDiff;
+        }
+    }
+
+    function pointerdown_handler(ev) {
+        // The pointerdown event signals the start of a touch interaction.
+        // This event is cached to support 2-finger gestures
+        evCache.push(ev);
+
+    }
+
+    function pointerup_handler(ev) {
+        // Remove this pointer from the cache
+        remove_event(ev);
+        // If the number of pointers down is less than two then reset diff tracker
+        if (evCache.length < 2) {
+            prevDiff = -1;
+        }
+        if (evCache.length === 0) {
+            xPrev = 0;
+            yPrev = 0;
+        }
+
+        
+    }
+
+    function remove_event(ev) {
+        // Remove this event from the target's cache
+        for (var i = 0; i < evCache.length; i++) {
+            if (evCache[i].pointerId == ev.pointerId) {
+                evCache.splice(i, 1);
+                break;
+            }
+        }
+    }
+    // Install event handlers for the pointer target
+    var el=document.getElementById("myBox");
+    el.onpointerdown = pointerdown_handler;
+    el.onpointermove = pointermove_handler;
+
+    // Use same handler for pointer{up,cancel,out,leave} events since
+    // the semantics for these events - in this app - are the same.
+    el.onpointerup = pointerup_handler;
+    el.onpointercancel = pointerup_handler;
+    el.onpointerout = pointerup_handler;
+    el.onpointerleave = pointerup_handler;
+
+    // Anonymous immediately executed function that wraps most of the code.
+    function sq(x) {
+        return x * x;
+    }
+
+    function reDraw() {
+        // Recalculate the colour of each pixel & redraw.
+        var xSc = xOffset + xPan;
+        var ySc = yOffset + yPan;
+        var index = 0;
+        for (var y=0; y<height; y++) {
+            for (var x=0; x<width; x++) {
+                var x0 = (x + xSc) / zoom;
+                var y0 = (y + ySc) / zoom;
+                var a = 0;
+                var b = 0;
+                var rx = 0;
+                var ry = 0;
+                var it = 0;
+                while (it < maxIt && sq(rx) + sq(ry) <= 4) {
+                    rx = sq(a) - sq(b) + x0;
+                    ry = 2 * a * b + y0;
+                    a = rx;
+                    b = ry;
+                    it++;
+                }
+                // Make some nice colours.
+                var rgb = [0,0,0];
+                if (it !== maxIt) {
+                    var f = 0.3 * it;
+                    rgb[0] = Math.sin(f) * 127 + 128;
+                    rgb[1] = Math.sin(f + c2) * 127 + 128;
+                    rgb[2] = Math.sin(f + c4) * 127 + 128;
+                }
+                img.data[index] = rgb[0];
+                img.data[index + 1] = rgb[1];
+                img.data[index + 2] = rgb[2];
+                img.data[index + 3] = 255;
+                index += 4;
+            }
+        }
+        // Redraw the canvas.
+        ctx.putImageData(img, 0, 0);
+    }
+
+    var c2 = 2 * Math.PI/3;
+    var c4 = 4 * Math.PI/3;
+    var c = document.getElementById("myBox");
+    var ctx = c.getContext("2d");
+    var height = c.height; 
+    var width = c.width;
+    var img = ctx.createImageData(width, height);
+    var xOffset = -width/2;
+    var yOffset = -height/2;
+    var xPan = -200;
+    var yPan = 0;
+    var zoom = 400;
+    var maxIt = 70;
+    reDraw();
+
+}());
+</script>
+</body>
+</html>
+

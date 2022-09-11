@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<!-- Julia Set drawing program -->
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+</head>
+
+<style>
+* {
+    font-family: sans-serif;
+    font-size: 14px;
+}
+
+body {
+    background-color: #333333;
+}
+
+h1,h2 {
+    display: inline;
+    font-family: "Comic Sans MS";
+}
+
+h1 {
+    color: LightGreen;
+    font-size: 18px;
+    padding-right: 40px;
+}
+
+h2 {
+    color: Yellow;
+    padding-left:20px;
+}
+
+#outer {
+ margin: auto;
+ display: table;
+ padding-bottom: 20px;
+}
+
+#btnSpan {
+    padding-left: 20px;
+}
+
+/* Set up the colour-display area. */
+#myBox {
+    width: 1200px;
+    height: 550px;
+    padding: 0;
+    margin: auto;
+    display: block;
+    border:5px solid #000000;
+}
+</style>
+
+<body>
+<span id="outer"><h1>The Julia Set</h1>
+<h2>Real part of C: </h2>
+<input type="text" id="real" value="-0.123" onfocus="this.value=''" size="10">
+<h2>Imaginary part: </h2>
+<input type="text" id="imag" value="0.746" onfocus="this.value=''" size="10">
+<span id="btnSpan"><button id="myBtn" onclick="clickBtn()">Go!</button></span>
+</span>
+<div><canvas id="myBox"></canvas></div>
+
+<script>
+// Declare "use strict" to enable better error reporting.
+"use strict";
+
+// Global scope for button press detection.
+var btnClicked = false;
+function clickBtn(){
+    btnClicked = true;
+}
+
+(function () {
+    // Anonymous immediately executed function that wraps most of the code.
+    function sq(x) {
+        return x * x;
+    }
+
+    function inSet(zR, zI) {
+        // Returns 0 or number of iterations.
+        var tmp;
+        for (var j=0; j<maxIt; j++) {            
+            if (sq(zR) + sq(zI) > 4) {
+                return j;
+            }
+            tmp = zR * zI;
+            zR = sq(zR) - sq(zI) + uR;
+            zI = 2 * tmp + uI;
+        }
+        return 0;
+    }
+
+
+    function reDraw() {
+        // Loop over the data and change pixels.
+        var zoom = 250;
+        var panX = .5;
+        var panY = 1.1;
+        for (var x=0; x < c.width; x++) {
+            for (var y=0; y < c.height; y++) {
+                var isIn = inSet(x/zoom - panX, y/zoom - panY);
+                if(!isIn) {
+                    ctx.fillStyle = "#000000";
+                    ctx.fillRect(x,y,1,1);
+                } else {
+                    ctx.fillStyle = "hsl(" + isIn*15+", 100%, 50%)";
+                    ctx.fillRect(x,y,1,1);
+                }
+            }
+        }
+    }
+    
+
+
+    // Immediately executed function that "listens" for the button press.
+    (function listen() {
+        if (btnClicked) {
+            btnClicked = false;
+            uR = Number(usrReal.value);
+            uI = Number(usrImag.value);
+            reDraw();
+        }
+        setTimeout(listen, 100);
+    }());
+
+    var maxIt = 50;
+    var c = document.getElementById("myBox");
+    var ctx = c.getContext("2d");
+    ctx.fillStyle = "white";
+    ctx.fillRect(0,0,c.width, c.height);
+    var usrReal = document.getElementById("real");
+    var usrImag = document.getElementById("imag");
+    var uR;
+    var uI;
+    addEventListener("keydown", function(event) {
+        if (event.keyCode == 13) {
+            clickBtn();
+        }
+    });   
+}());
+</script>
+</body>
+</html>
+

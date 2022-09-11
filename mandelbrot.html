@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<!-- Mandelbrot set drawing program -->
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+</head>
+
+<style>
+
+body {
+    background-color: #333333;
+}
+
+h1 {
+    color: LightGreen;
+    display: inline;
+    font-family: "Comic Sans MS", sans-serif;
+    font-size: 24px;
+    padding-right: 20px;
+}
+
+#outer {
+    margin: auto;
+    display: table;
+    padding-bottom: 20px;
+}
+
+.btnSpan {
+    padding-left: 20px;
+}
+
+/* Set up the colour-display area. */
+#myBox {
+    width: 1000px;
+    height: 550px;
+    padding: 0;
+    margin: auto;
+    display: block;
+    border:5px solid #000000;
+}
+</style>
+
+<body>
+<span id="outer"><h1>The Mandelbrot Set</h1>
+    <span class="btnSpan"><button onclick="zoomIn()">Zoom In</button></span>
+    <span class="btnSpan"><button onclick="zoomOut()">Zoom Out</button></span>
+    <span class="btnSpan"><button onclick="panL()">Left</button></span>
+    <span class="btnSpan"><button onclick="panR()">Right</button></span>
+    <span class="btnSpan"><button onclick="pUp()">Up</button></span>
+    <span class="btnSpan"><button onclick="pDown()">Down</button></span>
+</span>
+<div><canvas id="myBox" width=1000px height=550px></canvas></div>
+
+<script>
+// Declare "use strict" to enable better error reporting.
+"use strict";
+
+var zIn = false;
+var zOut = false;
+var pLeft = false;
+var pRight = false;
+var up = false;
+var down = false;
+
+function pDown() {
+    down = true;
+}
+function pUp() {
+    up = true;
+}
+function panR() {
+    pRight = true;
+}
+function panL() {
+    pLeft = true;
+}
+function zoomIn() {
+    zIn = true;
+}
+function zoomOut() {
+    zOut = true;
+}
+
+(function () {
+    // Anonymous immediately executed function that wraps most of the code.
+    function sq(x) {
+        return x * x;
+    }
+
+    function reDraw() {
+        // Recalculate the colour of each pixel & redraw.
+        var xSc = xOffset + xPan;
+        var ySc = yOffset + yPan;
+        var index = 0;
+        for (var y=0; y<height; y++) {
+            for (var x=0; x<width; x++) {
+                var x0 = (x + xSc) / zoom;
+                var y0 = (y + ySc) / zoom;
+                var a = 0;
+                var b = 0;
+                var rx = 0;
+                var ry = 0;
+                var it = 0;
+                while (it < maxIt && sq(rx) + sq(ry) <= 4) {
+                    rx = sq(a) - sq(b) + x0;
+                    ry = 2 * a * b + y0;
+                    a = rx;
+                    b = ry;
+                    it++;
+                }
+                // Make some nice colours.
+                var rgb = [0,0,0];
+                if (it !== maxIt) {
+                    var f = 0.3 * it;
+                    rgb[0] = Math.sin(f) * 127 + 128;
+                    rgb[1] = Math.sin(f + c2) * 127 + 128;
+                    rgb[2] = Math.sin(f + c4) * 127 + 128;
+                }
+                img.data[index] = rgb[0];
+                img.data[index + 1] = rgb[1];
+                img.data[index + 2] = rgb[2];
+                img.data[index + 3] = 255;
+                index += 4;
+            }
+        }
+        ctx.putImageData(img, 0, 0);
+    }
+
+    // Immediately executed function that "listens" for the button press.
+    (function listen() {
+        if (zIn) {
+            zIn = false;
+            zoom *= 1.5;
+            xPan *= 1.5;
+            yPan *= 1.5;
+            if (maxIt < 250) {
+                maxIt += 2;
+            }
+            setTimeout(reDraw, 0);
+        } else if (zOut) {
+            zOut = false;
+            zoom /= 1.5;
+            xPan /= 1.5;
+            yPan /= 1.5;
+            maxIt -= 2;
+            setTimeout(reDraw, 0);
+        } else if (pLeft) {
+            pLeft = false;
+            xPan += 100;
+            setTimeout(reDraw, 0);
+        } else if (pRight) {
+            pRight = false;
+            xPan -= 100;
+            setTimeout(reDraw, 0);
+        } else if (up) {
+            up = false;
+            yPan += 100;
+            setTimeout(reDraw, 0);
+        } else if (down) {
+            down = false;
+            yPan -= 100;
+            setTimeout(reDraw, 0);
+        }
+        setTimeout(listen, 50);
+    }());
+
+    var c2 = 2 * Math.PI/3;
+    var c4 = 4 * Math.PI/3;
+    var c = document.getElementById("myBox");
+    var ctx = c.getContext("2d");
+    var height = c.height; 
+    var width = c.width;
+    var img = ctx.createImageData(width, height);
+    var xOffset = -width/2;
+    var yOffset = -height/2;
+    var xPan = -10;
+    var yPan = 0;
+    var zoom = 250;
+    var maxIt = 80;
+    reDraw();
+
+}());
+</script>
+</body>
+</html>
+
